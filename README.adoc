@@ -1,0 +1,99 @@
+= A Java 9 Multi-Release JAR
+
+This is a http://openjdk.java.net/jeps/238[multi-release JAR file] project that illustrates the Java 9 multi-release facility that enables
+one to combine classes and resources for multiple JVM versions into a single JAR.
+This approach is based on the http://word-bits.flurg.com/multrelease-jars/[Generating Multi-Release JARs with Maven]
+by David Lloyd. This approach works well with IDEs and unit testing.
+
+The https://github.com/RedHatJava9Testing/multi-release illustrates approach using a simple Java 8 jdk-utils project
+and a Java 9 jdk9-utils project. The jdk9-utils project provides the Java 9 specific artifact whose classes and
+resources will be incorporated into the jdk-utils project multi-release JAR project. The jdk9-utils project is a simple
+maven JAR project. The jdk-utils project is a maven JAR project that incorporates the jdk9-utils artifact into
+the jdk-utils artifact in the META-INF/versions/9 subdirectory of the JAR artifact.
+
+There are 3 elements in the jdk-utils/pom.xml that are responsible for bundling the Java 9 content
+into the multi-release JAR. These are detailed in the following sections.
+
+== #MR1, the java9-utils dependency
+
+The jdk9-util artifact is referenced via a normal maven dependency as shown in the following block:
+[source,xml]
+----
+    <!-- #MR1 This is the dependency on the Java9 specific overrides that will be pulled into the multi-release jar -->
+    <dependency>
+      <groupId>org.jboss.utils</groupId>
+      <artifactId>java9-utils</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+      <!-- Exclude this artifact to avoid any possible circular dependency -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.utils</groupId>
+          <artifactId>utils-jar</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>``
+----
+
+Beyond the usual dependency GAV, this has an exclusion that references the org.jboss.utils:utils-jar. This is to
+prevent a circular depednency that may result from the org.jboss.utils:java9-utils including a dependency
+on the base Java 8 artifact for common code or testing.
+
+== #MR2, build resources
+The following resource section includes the output from the maven-dependency-plugin described in <<#MR3>> into
+the org.jboss.utils:utils-jar archive.
+[source,xml]
+----
+      <!-- #MR2 This includes the java9 classes from the maven-dependency-plugin output -->
+      <resource>
+        <directory>${project.build.directory}/generated-resources</directory>
+        <filtering>false</filtering>
+      </resource>
+----
+
+== #MR3, maven-dependency-plugin
+
+The contents of the org.jboss.utils:java9-utils artifact are included into the org.jboss.utils:java-utils by
+using the maven-dependency-plugin to unpack its contents under the ${project.build.directory}/generated-resources
+under the META-INF/versions/9 subdirectory to make its content available when running under Java 9.
+[source,xml]
+----
+      <!-- #MR3 -->
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.0.2</version>
+        <executions>
+          <execution>
+            <id>add-java9-classes</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <!-- This unpacks the java9 specific classes from the org.jboss.utils:java9-utils artifact
+            for inclusion via the generated-resource statement above
+            -->
+            <configuration>
+              <includeGroupIds>org.jboss.utils</includeGroupIds>
+              <includeArtifactIds>java9-utils</includeArtifactIds>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${project.build.directory}/generated-resources/META-INF/versions/9</outputDirectory>
+              <includes>**/*.class</includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+----
+
+The resulting multi-release JAR contents includes the org.jboss.jdk.util.Utils class in both the root
+as well as the META-INF/versions/9 subdirectory for use by Java 9 based runtimes.
+
+[source,xml]
+----
+[jdk-utils 635]$ jar -tf target/utils-jar-0.0.1-SNAPSHOT.jar
+META-INF/MANIFEST.MF
+META-INF/versions/9/org/jboss/jdk/util/Utils.class
+org/jboss/jdk/util/Utils$1.class
+org/jboss/jdk/util/Utils.class
+META-INF/maven/org.jboss.utils/utils-jar/pom.properties
+META-INF/maven/org.jboss.utils/utils-jar/pom.xml
+----

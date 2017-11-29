@@ -16,7 +16,7 @@
   </properties>
 
   <dependencies>
-    <!-- This is the dependency on the Java9 specific overrides that will be pulled into the multi-release jar -->
+    <!-- #MR1 This is the dependency on the Java9 specific overrides that will be pulled into the multi-release jar -->
     <dependency>
       <groupId>org.jboss.utils</groupId>
       <artifactId>java9-utils</artifactId>
@@ -44,7 +44,7 @@
         <directory>src/main/resources</directory>
         <filtering>true</filtering>
       </resource>
-      <!-- This includes the java9 classes from the maven-dependency-plugin output -->
+      <!-- #MR2 This includes the java9 classes from the maven-dependency-plugin output -->
       <resource>
         <directory>${project.build.directory}/generated-resources</directory>
         <filtering>false</filtering>
@@ -66,6 +66,7 @@
           </archive>
         </configuration>
       </plugin>
+      <!-- #MR3 -->
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.0.2</version>
