@@ -1,0 +1,96 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- This is the main Java8 based project that incorporates the Java9 specific overrides
+  using the multi-release jar format.
+  -->
+  <groupId>org.jboss.utils</groupId>
+  <version>0.0.1-SNAPSHOT</version>
+  <artifactId>utils-jar</artifactId>
+  <name>Java8 Utils</name>
+
+  <properties>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+  </properties>
+
+  <dependencies>
+    <!-- This is the dependency on the Java9 specific overrides that will be pulled into the multi-release jar -->
+    <dependency>
+      <groupId>org.jboss.utils</groupId>
+      <artifactId>java9-utils</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+      <!-- Exclude this artifact to avoid any possible circular dependency -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.utils</groupId>
+          <artifactId>utils-jar</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+      <!-- This includes the java9 classes from the maven-dependency-plugin output -->
+      <resource>
+        <directory>${project.build.directory}/generated-resources</directory>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.0.2</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Specification-Title>${project.artifactId}</Specification-Title>
+              <Implementation-Title>${project.artifactId}</Implementation-Title>
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <Multi-Release>true</Multi-Release>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.0.2</version>
+        <executions>
+          <execution>
+            <id>add-java9-classes</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <!-- This unpacks the java9 specific classes from the org.jboss.utils:java9-utils artifact
+            for inclusion via the generated-resource statement above
+            -->
+            <configuration>
+              <includeGroupIds>org.jboss.utils</includeGroupIds>
+              <includeArtifactIds>java9-utils</includeArtifactIds>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${project.build.directory}/generated-resources/META-INF/versions/9</outputDirectory>
+              <includes>**/*.class</includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>
