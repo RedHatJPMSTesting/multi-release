@@ -32,7 +32,7 @@ The jdk9-util artifact is referenced via a normal maven dependency as shown in t
           <artifactId>utils-jar</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>``
+    </dependency>
 ----
 
 Beyond the usual dependency GAV, this has an exclusion that references the org.jboss.utils:utils-jar. This is to
